@@ -8,6 +8,10 @@ init:
 	@echo "Creating Docker containers..." && \
 	@docker-compose up --build -d
 
+start:
+	@echo "Starting application..." && \
+	@docker-compose start	
+
 stop:
 	@echo "Stopping containers..." && \
 	@docker-compose stop
