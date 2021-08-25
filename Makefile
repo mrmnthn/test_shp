@@ -11,3 +11,7 @@ init:
 stop:
 	@echo "Stopping containers..." && \
 	@docker-compose stop
+
+php:
+	@echo "Entering php container..." && \
+	@docker-compose exec php sh
