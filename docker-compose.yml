@@ -11,8 +11,8 @@ services:
   php:
     build: ./docker/php
     ports: ['9000:9000']
-    volumes: ['./backend/:/var/www/backend:cached']
+    volumes: ['./app/:/var/www/app:cached']
   nginx:
     build: ./docker/nginx
     ports: ['80:80']
-    volumes: ['./backend/:/var/www/backend:cached']
+    volumes: ['./app/:/var/www/app:cached']
