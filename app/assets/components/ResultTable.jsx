@@ -12,7 +12,7 @@ const ResultTable = (props) => {
           <Table.HeaderCell>From</Table.HeaderCell>
           <Table.HeaderCell>To</Table.HeaderCell>
           <Table.HeaderCell>Stopover count</Table.HeaderCell>
-          <Table.HeaderCell>Best Price</Table.HeaderCell>
+          <Table.HeaderCell>Total Price</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
   

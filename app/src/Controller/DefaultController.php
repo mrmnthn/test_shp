@@ -211,7 +211,6 @@ class DefaultController extends AbstractController
         }
         $departureFlights = $this->departureFlightsById($from);
         $arrivalFlights = $this->arrivalFlightsById($to);
-
         $assoc = $this->getArrayIntersectAssocRecursive($departureFlights, $arrivalFlights);
 
         if ($assoc) {
@@ -228,7 +227,7 @@ class DefaultController extends AbstractController
 
         $stepOverFlight = $this->getPathWithStepOver($departureFlights, $arrivalFlights);
 
-        if (count($stepOverFlight) > self::MAX_STEPOVER_COUNT ) {
+        if (count($stepOverFlight) > self::MAX_STEPOVER_COUNT) {
             $res = [
                 'from' => $from,
                 'to' => $to,
@@ -240,8 +239,8 @@ class DefaultController extends AbstractController
         }
 
         $res = [
-            'from' => $from,
-            'to' => $to,
+            'from' => $this->airportNameById($from),
+            'to' => $this->airportNameById($to),
             'stopover' => count($stepOverFlight),
             'price' => $this->stepOverFlightTotalPrice($stepOverFlight),
         ];
@@ -250,7 +249,16 @@ class DefaultController extends AbstractController
         return $response;
     }
 
-    private function stepOverFlightTotalPrice($stepOverFlights) 
+    private function airportNameById($id)
+    {
+        foreach(self::AIRPORTS as $airport){
+            if ($airport['id'] == $id) {
+                return $airport['name'];
+            }
+        }
+    }
+
+    private function stepOverFlightTotalPrice($stepOverFlights)
     {
         return array_sum(array_column($stepOverFlights, 'price'));
     }
@@ -294,6 +302,7 @@ class DefaultController extends AbstractController
     private function departureFlightsById($id)
     {
         $filteredFlights = [];
+
         foreach (self::FLIGHTS as $flight) {
             if ($flight['code_departure'] != $id) {
                 continue;
@@ -301,12 +310,29 @@ class DefaultController extends AbstractController
             $filteredFlights[] = $flight;
         }
 
-        return $filteredFlights;
+        $distinctResult = [];
+        foreach ($filteredFlights as $flight) {
+            $currentKey = $flight['code_arrival'];
+            if(empty($distinctResult)){
+                $distinctResult[$currentKey] = $flight;
+            }
+
+            if (array_key_exists($currentKey, $distinctResult)
+                && $flight['price'] >= $flight['price']
+            ) {
+                continue;
+            }
+            $distinctResult[$currentKey] = $flight;
+
+        }
+        return $distinctResult;
     }
+
 
     private function arrivalFlightsById($id)
     {
         $filteredFlights = [];
+
         foreach (self::FLIGHTS as $flight) {
             if ($flight['code_arrival'] != $id) {
                 continue;
@@ -314,7 +340,22 @@ class DefaultController extends AbstractController
             $filteredFlights[] = $flight;
         }
 
-        return $filteredFlights;
+        $distinctResult = [];
+        foreach ($filteredFlights as $flight) {
+            $currentKey = $flight['code_departure'];
+            if(empty($distinctResult)){
+                $distinctResult[$currentKey] = $flight;
+            }
+
+            if (array_key_exists($currentKey, $distinctResult)
+                && $flight['price'] >= $flight['price']
+            ) {
+                continue;
+            }
+            $distinctResult[$currentKey] = $flight;
+
+        }
+        return $distinctResult;
     }
 
     private function getBestPriceFromGroup($array)
