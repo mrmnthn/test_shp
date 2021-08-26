@@ -20,7 +20,7 @@ const ResultTable = (props) => {
         <Table.Row>
           <Table.Cell>{bestFlights.from}</Table.Cell>
           <Table.Cell>{bestFlights.to}</Table.Cell>
-          <Table.Cell>{bestFlights.stopover < 1 ? <p>NaN</p> : bestFlights.stopover}</Table.Cell>
+          <Table.Cell>{bestFlights.stopover < 1 ? <p>Direct Flyght</p> : bestFlights.stopover}</Table.Cell>
           <Table.Cell>{bestFlights.price}</Table.Cell>
         </Table.Row>
       </Table.Body>

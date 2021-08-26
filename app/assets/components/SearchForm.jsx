@@ -17,10 +17,6 @@ class SearchForm extends Component {
         value: '',
         text: '',
       },
-      stopover: {
-        value: '',
-        text:''
-      },
       bestFlights: [],
       stopoverOptions: [
         { text: "0", value: 0 },
@@ -44,13 +40,11 @@ class SearchForm extends Component {
   getBestPrice() {
     const {value: fromVal} = this.state.from
     const {value: toVal} = this.state.to
-    const {value: stopoverVal} = this.state.stopover
     axios
       .get(`http://localhost/api/bestflights`, {
         params: {
           fromVal,
-          toVal,
-          stopoverVal,
+          toVal
         },
       })
       .then((bestFlights) => {
@@ -81,18 +75,13 @@ class SearchForm extends Component {
         value: '',
         text: '',
       },
-      stopover: {
-        value: '',
-        text:''
-      },
       bestFlights: [],
     });
   }
 
 
   render() {
-    const { airports, from, to, stopover, bestFlights, loading, stopoverOptions } = this.state
-    console.log(stopover.value)
+    const { airports, from, to, bestFlights, loading, stopoverOptions } = this.state
     return (
       <>
         <Form onSubmit={this.onSubmit}>
@@ -114,15 +103,6 @@ class SearchForm extends Component {
             label="Arrival Airport"
             options={airports}
             placeholder="Select an airport"
-            onChange={(e, { value, name }) => this.handleDropdownChange(name, value, e)}
-          />
-          <Form.Select
-            value={stopover.value}
-            name="stopover"
-            fluid
-            label="Stopovers"
-            options={stopoverOptions}
-            placeholder="Select a value"
             onChange={(e, { value, name }) => this.handleDropdownChange(name, value, e)}
           />
           <Button 

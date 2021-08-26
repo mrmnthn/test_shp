@@ -9,6 +9,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class DefaultController extends AbstractController
 {
+    const MAX_STEPOVER_COUNT = 2;
     const AIRPORTS = [
         [
             'id' => 1,
@@ -200,22 +201,125 @@ class DefaultController extends AbstractController
 
         $res = [];
         $params = $request->query->all();
-        if (empty($params) 
-        || empty($from = $params['fromVal']) 
-        || empty($to = $params['toVal'])) {
+        if (
+            empty($params)
+            || empty($from = $params['fromVal'])
+            || empty($to = $params['toVal'])
+        ) {
             $response->setContent(json_encode($res));
             return $response;
         }
-        $stopover = isset($params['stopoverVal']) ? $params['stopoverVal'] : 0;
+        $departureFlights = $this->departureFlightsById($from);
+        $arrivalFlights = $this->arrivalFlightsById($to);
+
+        $assoc = $this->getArrayIntersectAssocRecursive($departureFlights, $arrivalFlights);
+
+        if ($assoc) {
+            $bestPrice = $this->getBestPriceFromGroup($assoc);
+            $res = [
+                'from' => $from,
+                'to' => $to,
+                'stopover' => 0,
+                'price' => $bestPrice['price'],
+            ];
+            $response->setContent(json_encode($res));
+            return $response;
+        }
+
+        $stepOverFlight = $this->getPathWithStepOver($departureFlights, $arrivalFlights);
+
+        if (count($stepOverFlight) > self::MAX_STEPOVER_COUNT ) {
+            $res = [
+                'from' => $from,
+                'to' => $to,
+                'stopover' => count($stepOverFlight),
+                'price' => 0,
+            ];
+            $response->setContent(json_encode($res));
+            return $response;
+        }
 
         $res = [
             'from' => $from,
             'to' => $to,
-            'stopover' => $stopover,
-            'price' => self::FLIGHTS[0]['price'],
+            'stopover' => count($stepOverFlight),
+            'price' => $this->stepOverFlightTotalPrice($stepOverFlight),
         ];
 
         $response->setContent(json_encode($res));
         return $response;
+    }
+
+    private function stepOverFlightTotalPrice($stepOverFlights) 
+    {
+        return array_sum(array_column($stepOverFlights, 'price'));
+    }
+
+    private function getPathWithStepOver($arrayDep, $arrayArr)
+    {
+        $res = [];
+        foreach ($arrayDep as $dep) {
+            foreach ($arrayArr as $arr) {
+                if ($dep['code_arrival'] != $arr['code_departure']) {
+                    continue;
+                }
+                $res[] = $arr;
+                $res[] = $dep;
+            }
+        }
+        return $res;
+    }
+
+    private function getArrayIntersectAssocRecursive(&$value1, &$value2)
+    {
+        if (!is_array($value1) || !is_array($value1)) {
+            return $value1 === $value2;
+        }
+
+        $intersectKeys = array_intersect(array_keys($value1), array_keys($value2));
+
+        $intersectValues = [];
+        foreach ($intersectKeys as $key) {
+            if ($this->getArrayIntersectAssocRecursive($value1[$key], $value2[$key])) {
+                $intersectValues[$key] = $value1[$key];
+            }
+        }
+
+        return $intersectValues;
+    }
+
+    /**
+     * 
+     */
+    private function departureFlightsById($id)
+    {
+        $filteredFlights = [];
+        foreach (self::FLIGHTS as $flight) {
+            if ($flight['code_departure'] != $id) {
+                continue;
+            }
+            $filteredFlights[] = $flight;
+        }
+
+        return $filteredFlights;
+    }
+
+    private function arrivalFlightsById($id)
+    {
+        $filteredFlights = [];
+        foreach (self::FLIGHTS as $flight) {
+            if ($flight['code_arrival'] != $id) {
+                continue;
+            }
+            $filteredFlights[] = $flight;
+        }
+
+        return $filteredFlights;
+    }
+
+    private function getBestPriceFromGroup($array)
+    {
+        asort($array);
+        return current($array);
     }
 }
