@@ -6,12 +6,21 @@ import ResultTable from "./ResultTable";
 class SearchForm extends Component {
   constructor() {
     super();
-    this.state = {
+    const initialState =  {
       airports: [],
       loading: true,
-      from: "",
-      to: "",
-      stopover: "",
+      from: {
+        value:'',
+        text:'',
+      },
+      to: {
+        value: '',
+        text: '',
+      },
+      stopover: {
+        value: '',
+        text:''
+      },
       bestFlights: [],
       stopoverOptions: [
         { text: "0", value: 0 },
@@ -19,6 +28,7 @@ class SearchForm extends Component {
         { text: "2", value: 2 },
       ]
     };
+    this.state = initialState
   }
 
   componentDidMount() {
@@ -32,42 +42,63 @@ class SearchForm extends Component {
   }
 
   getBestPrice() {
-    const { from, to, stopover } = this.state;
+    const {value: fromVal} = this.state.from
+    const {value: toVal} = this.state.to
+    const {value: stopoverVal} = this.state.stopover
     axios
-      .get(`http://localhost/api/bestflights`, null, {
+      .get(`http://localhost/api/bestflights`, {
         params: {
-          from,
-          to,
-          stopover,
+          fromVal,
+          toVal,
+          stopoverVal,
         },
       })
       .then((bestFlights) => {
         this.setState({ bestFlights: bestFlights.data });
+        console.log('bestflights', bestFlights)
       });
   }
 
   handleDropdownChange = (name, value, e) => {
-    this.setState({ [name]: value });
+    e.preventDefault();
+    this.setState({ [name]: {value, text: e.target.innerText} });
 
     console.log(e.target.innerText);
   };
 
-  handleSubmit = (e) => {
+  onSubmit = (e) => {
     e.preventDefault();
     this.getBestPrice();
   };
 
-  resetSearch = () =>
-    this.setState({ from: "", to: "", stopover: "", bestFlights: [] });
+  resetSearch = () => {
+    this.setState({
+      from: {
+        value:'',
+        text:'',
+      },
+      to: {
+        value: '',
+        text: '',
+      },
+      stopover: {
+        value: '',
+        text:''
+      },
+      bestFlights: [],
+    });
+  }
+
 
   render() {
     const { airports, from, to, stopover, bestFlights, loading, stopoverOptions } = this.state
+    console.log(stopover.value)
     return (
       <>
-        <Form onSubmit={this.handleSubmit}>
+        <Form onSubmit={this.onSubmit}>
           <Form.Select
             loading={loading}
-            value={from}
+            value={from.value}
             name="from"
             fluid
             label="Departure Airport"
@@ -77,37 +108,35 @@ class SearchForm extends Component {
           />
           <Form.Select
             loading={loading}
-            value={to}
+            value={to.value}
             name="to"
             fluid
             label="Arrival Airport"
             options={airports}
             placeholder="Select an airport"
-            onChange={(e, { value, name }) => this.handleDropdownChange(name, value)}
+            onChange={(e, { value, name }) => this.handleDropdownChange(name, value, e)}
           />
           <Form.Select
-            value={stopover}
+            value={stopover.value}
             name="stopover"
             fluid
             label="Stopovers"
             options={stopoverOptions}
             placeholder="Select a value"
-            onChange={(e, { value, name }) => this.handleDropdownChange(name, value)}
+            onChange={(e, { value, name }) => this.handleDropdownChange(name, value, e)}
           />
           <Button 
             color="green" 
             type="submit" 
-            disabled={!from
-            || !to
+            disabled={!from.value
+            || !to.value
             }
             >Search</Button>
-          <Button  color="pink"  onClick={this.resetSearch}>Reset</Button>
+          <Button type="reset"  color="pink"  onClick={this.resetSearch}>Reset</Button>
         </Form>
         <Divider />
         <ResultTable 
           bestFlights={bestFlights} 
-          from={from} 
-          to={to} 
           />
       </>
     );
