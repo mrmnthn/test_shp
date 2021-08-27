@@ -9,7 +9,6 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class DefaultController extends AbstractController
 {
-    const MAX_STEPOVER_COUNT = 2;
     const AIRPORTS = [
         [
             'id' => 1,
@@ -139,7 +138,33 @@ class DefaultController extends AbstractController
             'price' => 58
         ],
     ];
-
+    // const FLIGHTS = [
+    //     [
+    //         'code_departure' => 1,
+    //         'code_arrival' => 3,
+    //         'price' => 29
+    //     ],
+    //     [
+    //         'code_departure' => 1,
+    //         'code_arrival' => 5,
+    //         'price' => 30
+    //     ],
+    //     [
+    //         'code_departure' => 3,
+    //         'code_arrival' => 5,
+    //         'price' => 29
+    //     ],
+    //     [
+    //         'code_departure' => 5,
+    //         'code_arrival' => 2,
+    //         'price' => 29
+    //     ],
+    //     [
+    //         'code_departure' => 2,
+    //         'code_arrival' => 4,
+    //         'price' => 29
+    //     ],
+    // ];
     /**
      * @Route("/{reactRouting}", name="home", defaults={"reactRouting": null})
      */
@@ -209,49 +234,57 @@ class DefaultController extends AbstractController
             $response->setContent(json_encode($res));
             return $response;
         }
-        $departureFlights = $this->departureFlightsById($from);
-        $arrivalFlights = $this->arrivalFlightsById($to);
-        $assoc = $this->getArrayIntersectAssocRecursive($departureFlights, $arrivalFlights);
 
-        if ($assoc) {
-            $bestPrice = $this->getBestPriceFromGroup($assoc);
+        $directFlight = $this->getDirectFlight($from, $to);
+
+        if ($directFlight) {
+
             $res = [
-                'from' => $from,
-                'to' => $to,
-                'stopover' => 0,
-                'price' => $bestPrice['price'],
+                'from' => $this->getAirportNameById($from),
+                'to' => $this->getAirportNameById($to),
+                'stopovers' => 0,
+                'price' => $directFlight['price'],
             ];
             $response->setContent(json_encode($res));
             return $response;
         }
 
-        $stepOverFlight = $this->getPathWithStepOver($departureFlights, $arrivalFlights);
+        $departureFlights = $this->departureFlightsById($from);
+        $arrivalFlights = $this->arrivalFlightsById($to);
 
-        if (count($stepOverFlight) > self::MAX_STEPOVER_COUNT) {
+        $stopOverFlight = $this->getPathWithStepOver($to, $arrivalFlights, $departureFlights);
+
+
+        if ($stopOverFlight) {
             $res = [
-                'from' => $from,
-                'to' => $to,
-                'stopover' => count($stepOverFlight),
-                'price' => 0,
+                'from' => $this->getAirportNameById($from),
+                'to' => $this->getAirportNameById($to),
+                'stopovers' => $this->countStopover($stopOverFlight),
+                'price' => $this->stepOverFlightTotalPrice($stopOverFlight),
             ];
             $response->setContent(json_encode($res));
             return $response;
         }
 
         $res = [
-            'from' => $this->airportNameById($from),
-            'to' => $this->airportNameById($to),
-            'stopover' => count($stepOverFlight),
-            'price' => $this->stepOverFlightTotalPrice($stepOverFlight),
+            'from' => $this->getAirportNameById($from),
+            'to' => $this->getAirportNameById($to),
+            'stopovers' => 0,
+            'price' => 0,
         ];
-
         $response->setContent(json_encode($res));
         return $response;
     }
 
-    private function airportNameById($id)
+    private function countStopover($stopovers)
     {
-        foreach(self::AIRPORTS as $airport){
+        return count($stopovers);
+        
+    }
+
+    private function getAirportNameById($id)
+    {
+        foreach (self::AIRPORTS as $airport) {
             if ($airport['id'] == $id) {
                 return $airport['name'];
             }
@@ -263,42 +296,60 @@ class DefaultController extends AbstractController
         return array_sum(array_column($stepOverFlights, 'price'));
     }
 
-    private function getPathWithStepOver($arrayDep, $arrayArr)
+    private function getPathWithStepOver($to, $arrivalGroup, $departuresGroup)
     {
-        $res = [];
-        foreach ($arrayDep as $dep) {
-            foreach ($arrayArr as $arr) {
-                if ($dep['code_arrival'] != $arr['code_departure']) {
-                    continue;
+        foreach ($departuresGroup as $departureFlight) {
+            $currentTo = $departureFlight['code_arrival'];
+            foreach (self::FLIGHTS as $stopoverFlight) {
+                if ($departureFlight['code_arrival'] == $stopoverFlight['code_departure']) {
+                    $stopovers[$currentTo] = ['dep' => $departureFlight, 'stopovers' => [$stopoverFlight]];
                 }
-                $res[] = $arr;
-                $res[] = $dep;
             }
         }
-        return $res;
+
+        if (! empty($stopovers)) {
+            foreach ($stopovers as $key => $path) {
+                foreach ($path['stopovers'] as $stopover) {
+                    if ($stopover['code_arrival'] == $to) {
+                        $completePath = array_values($stopovers[$key]['stopovers']);
+                        $completePath[] = $stopovers[$key]['dep'];
+                        return $completePath;
+                    }
+                    foreach (self::FLIGHTS as $stopoverFlight) {
+                        if ($stopover['code_arrival'] == $stopoverFlight['code_departure']) {
+                            $stopovers[$key]['stopovers'][] = $stopoverFlight;
+                        }
+                    }
+                }
+            }
+    
+            foreach ($stopovers as $key => $path) {
+                foreach ($path['stopovers'] as $stopover) {
+                    if ($stopover['code_arrival'] == $to) {
+                        $completePath = array_values($stopovers[$key]['stopovers']);
+                        $completePath[] = $stopovers[$key]['dep'];
+                        return $completePath;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
-    private function getArrayIntersectAssocRecursive(&$value1, &$value2)
+    private function getDirectFlight($dep, $arr)
     {
-        if (!is_array($value1) || !is_array($value1)) {
-            return $value1 === $value2;
-        }
-
-        $intersectKeys = array_intersect(array_keys($value1), array_keys($value2));
-
-        $intersectValues = [];
-        foreach ($intersectKeys as $key) {
-            if ($this->getArrayIntersectAssocRecursive($value1[$key], $value2[$key])) {
-                $intersectValues[$key] = $value1[$key];
+        $directFlights = [];
+        foreach (self::FLIGHTS as $flight) {
+            if ($flight['code_departure'] == $dep && $flight['code_arrival'] == $arr) {
+                $directFlights[] = $flight;
             }
         }
 
-        return $intersectValues;
+
+        return $this->getBestPriceFromGroup($directFlights);
     }
 
-    /**
-     * 
-     */
     private function departureFlightsById($id)
     {
         $filteredFlights = [];
@@ -309,23 +360,7 @@ class DefaultController extends AbstractController
             }
             $filteredFlights[] = $flight;
         }
-
-        $distinctResult = [];
-        foreach ($filteredFlights as $flight) {
-            $currentKey = $flight['code_arrival'];
-            if(empty($distinctResult)){
-                $distinctResult[$currentKey] = $flight;
-            }
-
-            if (array_key_exists($currentKey, $distinctResult)
-                && $flight['price'] >= $flight['price']
-            ) {
-                continue;
-            }
-            $distinctResult[$currentKey] = $flight;
-
-        }
-        return $distinctResult;
+        return $filteredFlights;
     }
 
 
@@ -339,28 +374,12 @@ class DefaultController extends AbstractController
             }
             $filteredFlights[] = $flight;
         }
-
-        $distinctResult = [];
-        foreach ($filteredFlights as $flight) {
-            $currentKey = $flight['code_departure'];
-            if(empty($distinctResult)){
-                $distinctResult[$currentKey] = $flight;
-            }
-
-            if (array_key_exists($currentKey, $distinctResult)
-                && $flight['price'] >= $flight['price']
-            ) {
-                continue;
-            }
-            $distinctResult[$currentKey] = $flight;
-
-        }
-        return $distinctResult;
+        return $filteredFlights;
     }
 
-    private function getBestPriceFromGroup($array)
+    private function getBestPriceFromGroup($flightGroup)
     {
-        asort($array);
-        return current($array);
+        asort($flightGroup);
+        return current($flightGroup);
     }
 }

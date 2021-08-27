@@ -6,25 +6,18 @@ import ResultTable from "./ResultTable";
 class SearchForm extends Component {
   constructor() {
     super();
-    const initialState =  {
+    this.state = {
       airports: [],
-      loading: true,
       from: {
-        value:'',
-        text:'',
+        value: "",
+        text: "",
       },
       to: {
-        value: '',
-        text: '',
+        value: "",
+        text: "",
       },
       bestFlights: [],
-      stopoverOptions: [
-        { text: "0", value: 0 },
-        { text: "1", value: 1 },
-        { text: "2", value: 2 },
-      ]
     };
-    this.state = initialState
   }
 
   componentDidMount() {
@@ -33,13 +26,13 @@ class SearchForm extends Component {
 
   getAirports() {
     axios.get(`http://localhost/api/airports`).then((airports) => {
-      this.setState({ airports: airports.data, loading: false });
+      this.setState({ airports: airports.data});
     });
   }
 
   getBestPrice() {
-    const {value: fromVal} = this.state.from
-    const {value: toVal} = this.state.to
+    const { value: fromVal } = this.state.from;
+    const { value: toVal } = this.state.to;
     axios
       .get(`http://localhost/api/bestflights`, {
         params: {
@@ -49,15 +42,11 @@ class SearchForm extends Component {
       })
       .then((bestFlights) => {
         this.setState({ bestFlights: bestFlights.data });
-        console.log('bestflights', bestFlights)
       });
   }
 
-  handleDropdownChange = (name, value, e) => {
-    e.preventDefault();
-    this.setState({ [name]: {value, text: e.target.innerText} });
-
-    console.log(e.target.innerText);
+  handleChange = (name, value, e) => {
+    this.setState({ [name]: { value, text: e.target.innerText } });
   };
 
   onSubmit = (e) => {
@@ -68,56 +57,54 @@ class SearchForm extends Component {
   resetSearch = () => {
     this.setState({
       from: {
-        value:'',
-        text:'',
+        value: "",
+        text: "",
       },
       to: {
-        value: '',
-        text: '',
+        value: "",
+        text: "",
       },
       bestFlights: [],
     });
-  }
-
+  };
 
   render() {
-    const { airports, from, to, bestFlights, loading, stopoverOptions } = this.state
+    const { airports, from, to, bestFlights } =
+      this.state;
     return (
       <>
         <Form onSubmit={this.onSubmit}>
           <Form.Select
-            loading={loading}
             value={from.value}
             name="from"
             fluid
             label="Departure Airport"
             options={airports}
             placeholder="Select an airport"
-            onChange={(e, { value, name }) => this.handleDropdownChange(name, value, e)}
+            onChange={(e, { value, name }) => this.handleChange(name, value, e)}
           />
           <Form.Select
-            loading={loading}
             value={to.value}
             name="to"
             fluid
             label="Arrival Airport"
             options={airports}
             placeholder="Select an airport"
-            onChange={(e, { value, name }) => this.handleDropdownChange(name, value, e)}
+            onChange={(e, { value, name }) => this.handleChange(name, value, e)}
           />
-          <Button 
-            color="green" 
-            type="submit" 
-            disabled={!from.value
-            || !to.value
-            }
-            >Search</Button>
-          <Button type="reset"  color="pink"  onClick={this.resetSearch}>Reset</Button>
+          <Button
+            color="green"
+            type="submit"
+            disabled={!from.value || !to.value}
+          >
+            Search
+          </Button>
+          <Button type="reset" color="pink" onClick={this.resetSearch}>
+            Reset
+          </Button>
         </Form>
         <Divider />
-        <ResultTable 
-          bestFlights={bestFlights} 
-          />
+        <ResultTable bestFlights={bestFlights} />
       </>
     );
   }
