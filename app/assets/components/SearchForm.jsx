@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Button, Divider, Form } from "semantic-ui-react";
+import { Button, Divider, Form, Grid } from "semantic-ui-react";
 import axios from "axios";
 import ResultTable from "./ResultTable";
 
@@ -26,7 +26,7 @@ class SearchForm extends Component {
 
   getAirports() {
     axios.get(`http://localhost/api/airports`).then((airports) => {
-      this.setState({ airports: airports.data});
+      this.setState({ airports: airports.data });
     });
   }
 
@@ -37,7 +37,7 @@ class SearchForm extends Component {
       .get(`http://localhost/api/bestflights`, {
         params: {
           fromVal,
-          toVal
+          toVal,
         },
       })
       .then((bestFlights) => {
@@ -69,40 +69,49 @@ class SearchForm extends Component {
   };
 
   render() {
-    const { airports, from, to, bestFlights } =
-      this.state;
+    const { airports, from, to, bestFlights } = this.state;
     return (
       <>
-        <Form onSubmit={this.onSubmit}>
-          <Form.Select
-            value={from.value}
-            name="from"
-            fluid
-            label="Departure Airport"
-            options={airports}
-            placeholder="Select an airport"
-            onChange={(e, { value, name }) => this.handleChange(name, value, e)}
-          />
-          <Form.Select
-            value={to.value}
-            name="to"
-            fluid
-            label="Arrival Airport"
-            options={airports}
-            placeholder="Select an airport"
-            onChange={(e, { value, name }) => this.handleChange(name, value, e)}
-          />
-          <Button
-            color="green"
-            type="submit"
-            disabled={!from.value || !to.value}
-          >
-            Search
-          </Button>
-          <Button type="reset" color="pink" onClick={this.resetSearch}>
-            Reset
-          </Button>
-        </Form>
+        <Grid columns={3}>
+          <Grid.Row>
+            <Grid.Column>
+              <Form onSubmit={this.onSubmit}>
+                <Form.Select
+                  value={from.value}
+                  name="from"
+                  fluid
+                  label="Departure Airport"
+                  options={airports}
+                  placeholder="Select an airport"
+                  onChange={(e, { value, name }) =>
+                    this.handleChange(name, value, e)
+                  }
+                />
+                <Form.Select
+                  value={to.value}
+                  name="to"
+                  fluid
+                  label="Arrival Airport"
+                  options={airports}
+                  placeholder="Select an airport"
+                  onChange={(e, { value, name }) =>
+                    this.handleChange(name, value, e)
+                  }
+                />
+                <Button
+                  color="green"
+                  type="submit"
+                  disabled={!from.value || !to.value}
+                >
+                  Search
+                </Button>
+                <Button type="reset" color="pink" onClick={this.resetSearch}>
+                  Reset
+                </Button>
+              </Form>
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
         <Divider />
         <ResultTable bestFlights={bestFlights} />
       </>
