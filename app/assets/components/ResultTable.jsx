@@ -30,13 +30,19 @@ const ResultTable = (props) => {
               <Table.Cell>{bestFlights.from}</Table.Cell>
               <Table.Cell>{bestFlights.to}</Table.Cell>
               <Table.Cell>
-                {bestFlights.stopovers === 0 ? <p><strong>Direct Flight</strong></p> : bestFlights.stopovers}
+                {bestFlights.stopovers === 0 ? (
+                  <p>
+                    <strong>Direct Flight</strong>
+                  </p>
+                ) : (
+                  bestFlights.stopovers
+                )}
               </Table.Cell>
               <Table.Cell>{bestFlights.price}</Table.Cell>
               <Table.Cell>
-                  <Icon.Group size="small">
-                    <Icon name="check" color='green' />
-                  </Icon.Group>
+                <Icon.Group size="small">
+                  <Icon name="check" color="green" />
+                </Icon.Group>
               </Table.Cell>
             </Table.Row>
           </Table.Body>
@@ -44,7 +50,14 @@ const ResultTable = (props) => {
       );
     }
   } else {
-    return <h3>No airports selected</h3>;
+    return (
+      <Header as="h2">
+        <Icon.Group size="large">
+          <Icon name="paper plane" color="pink" />
+        </Icon.Group>
+        Nothing to show you!
+      </Header>
+    );
   }
 };
 

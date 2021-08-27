@@ -1,0 +1,175 @@
+<?php
+namespace App\Service;
+
+use App\mockData\Data;
+
+class FlightService
+{
+
+    public function getBestFlight($from, $to)
+    {
+        $res = [];
+        $directFlight = $this->getDirectFlight($from, $to);
+
+        if ($directFlight) {
+            $res = [
+                'from' => $this->getAirportNameById($from),
+                'to' => $this->getAirportNameById($to),
+                'stopovers' => 0,
+                'price' => $directFlight['price'],
+            ];
+            return $res;
+        }
+
+        $departureFlights = $this->departureFlightsById($from);
+        $stopOverFlight = $this->getPathWithStepOver($to, $departureFlights);
+
+        if ($stopOverFlight) {
+            $res = [
+                'from' => $this->getAirportNameById($from),
+                'to' => $this->getAirportNameById($to),
+                'stopovers' => $this->countStopover($stopOverFlight),
+                'price' => $this->stepOverFlightTotalPrice($stopOverFlight),
+            ];
+            return $res;
+        }
+
+        $res = [
+            'from' => $this->flightService->getAirportNameById($from),
+            'to' => $this->flightService->getAirportNameById($to),
+            'stopovers' => 0,
+            'price' => 0,
+        ];
+
+        return;
+    }
+    
+    /**
+     * Count the number of stopovers
+     */
+    private function countStopover($stopovers)
+    {
+        return count($stopovers);
+        
+    }
+
+    /**
+     * Given an id, return the airport name
+     */
+    private function getAirportNameById($id)
+    {
+        foreach (Data::AIRPORTS as $airport) {
+            if ($airport['id'] == $id) {
+                return $airport['name'];
+            }
+        }
+    }
+
+    /**
+     * Compute the fligths total price
+     */
+    private function stepOverFlightTotalPrice($stepOverFlights)
+    {
+        return array_sum(array_column($stepOverFlights, 'price'));
+    }
+
+    /**
+     * Return the best path with max 2 stopovers
+     */
+    private function getPathWithStepOver($to, $departuresGroup)
+    {
+        foreach ($departuresGroup as $departureFlight) {
+            $currentTo = $departureFlight['code_arrival'];
+            foreach (Data::FLIGHTS as $stopoverFlight) {
+                if ($departureFlight['code_arrival'] == $stopoverFlight['code_departure']) {
+                    $stopovers[$currentTo] = ['dep' => $departureFlight, 'stopovers' => [$stopoverFlight]];
+                }
+            }
+        }
+
+        if (! empty($stopovers)) {
+            foreach ($stopovers as $key => $path) {
+                foreach ($path['stopovers'] as $stopover) {
+                    if ($stopover['code_arrival'] == $to) {
+                        $completePath = array_values($stopovers[$key]['stopovers']);
+                        $completePath[] = $stopovers[$key]['dep'];
+                        return $completePath;
+                    }
+                    foreach (Data::FLIGHTS as $stopoverFlight) {
+                        if ($stopover['code_arrival'] == $stopoverFlight['code_departure']) {
+                            $stopovers[$key]['stopovers'][] = $stopoverFlight;
+                        }
+                    }
+                }
+            }
+    
+            foreach ($stopovers as $key => $path) {
+                foreach ($path['stopovers'] as $stopover) {
+                    if ($stopover['code_arrival'] == $to) {
+                        $completePath = array_values($stopovers[$key]['stopovers']);
+                        $completePath[] = $stopovers[$key]['dep'];
+                        return $completePath;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return a direct flight
+     */
+    private function getDirectFlight($dep, $arr)
+    {
+        $directFlights = [];
+        foreach (Data::FLIGHTS as $flight) {
+            if ($flight['code_departure'] == $dep && $flight['code_arrival'] == $arr) {
+                $directFlights[] = $flight;
+            }
+        }
+
+        return $this->getBestPriceFromGroup($directFlights);
+    }
+
+    /**
+     * return the departure flights by airport id
+     */
+    private function departureFlightsById($id)
+    {
+        $filteredFlights = [];
+
+        foreach (Data::FLIGHTS as $flight) {
+            if ($flight['code_departure'] != $id) {
+                continue;
+            }
+            $filteredFlights[] = $flight;
+        }
+        return $filteredFlights;
+    }
+
+    /**
+     * return the arrival flights by airport id
+     */
+    private function arrivalFlightsById($id)
+    {
+        $filteredFlights = [];
+
+        foreach (Data::FLIGHTS as $flight) {
+            if ($flight['code_arrival'] != $id) {
+                continue;
+            }
+            $filteredFlights[] = $flight;
+        }
+        return $filteredFlights;
+    }
+
+    /**
+     * return the best price given a group of flights
+     */
+    private function getBestPriceFromGroup($flightGroup)
+    {
+        asort($flightGroup);
+        return current($flightGroup);
+    }
+}
