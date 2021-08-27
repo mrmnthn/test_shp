@@ -9,17 +9,17 @@ class FlightService
 
     public function getBestFlight($from, $to)
     {
-        $res = [];
+        $flightResult = [
+            'from' => $this->getAirportNameById($from), 
+            'to' => $this->getAirportNameById($to),
+        ];
+
         $directFlight = $this->getDirectFlight($from, $to);
 
         if ($directFlight) {
-            $res = [
-                'from' => $this->getAirportNameById($from),
-                'to' => $this->getAirportNameById($to),
-                'stopovers' => 0,
-                'price' => $directFlight['price'],
-            ];
-            return $res;
+            $flightResult['stopovers'] = 0;
+            $flightResult['price'] =  $directFlight['price'];
+            return $flightResult;
         }
 
         $departureFlights = $this->departureFlightsById($from);
@@ -27,23 +27,16 @@ class FlightService
 
         if ($stopOverFlight) {
             $bestFlightPathWithStopovers = $this->getBestFlightPathWithStopovers($stopOverFlight);
-            $res = [
-                'from' => $this->getAirportNameById($from),
-                'to' => $this->getAirportNameById($to),
-                'stopovers' => $this->countStopover($bestFlightPathWithStopovers),
-                'price' => $this->stepOverFlightTotalPrice($bestFlightPathWithStopovers),
-            ];
-            return $res;
+            $flightResult['stopovers'] = $this->countStopover($bestFlightPathWithStopovers);
+            $flightResult['price'] = $this->stepOverFlightTotalPrice($bestFlightPathWithStopovers);
+
+            return $flightResult;
         }
 
-        $res = [
-            'from' => $this->getAirportNameById($from),
-            'to' => $this->getAirportNameById($to),
-            'stopovers' => 0,
-            'price' => 0,
-        ];
+        $flightResult['stopovers'] = 0;
+        $flightResult['price'] = 0;
 
-        return $res;
+        return $flightResult;
     }
 
     /**
@@ -52,7 +45,7 @@ class FlightService
     private function getBestFlightPathWithStopovers($stopOverFlight)
     {
         $stopoversOrderByPrice = [];
-        foreach ($stopOverFlight as $key => $stopovers) {
+        foreach ($stopOverFlight as $stopovers) {
             $totalPrice = array_sum(array_column($stopovers, 'price'));
             $stopoversOrderByPrice[$totalPrice] = $stopovers;
         }
