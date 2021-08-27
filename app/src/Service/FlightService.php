@@ -41,7 +41,7 @@ class FlightService
             'price' => 0,
         ];
 
-        return;
+        return $res;
     }
     
     /**
@@ -141,22 +141,6 @@ class FlightService
 
         foreach (Data::FLIGHTS as $flight) {
             if ($flight['code_departure'] != $id) {
-                continue;
-            }
-            $filteredFlights[] = $flight;
-        }
-        return $filteredFlights;
-    }
-
-    /**
-     * return the arrival flights by airport id
-     */
-    private function arrivalFlightsById($id)
-    {
-        $filteredFlights = [];
-
-        foreach (Data::FLIGHTS as $flight) {
-            if ($flight['code_arrival'] != $id) {
                 continue;
             }
             $filteredFlights[] = $flight;
