@@ -9,9 +9,9 @@
     - [yarn](https://yarnpkg.com/lang/en/) and [node.js](https://nodejs.org/en/) (if you will use [Encore](https://symfony.com/doc/current/frontend/encore/installation.html) for managing JS and CSS)
 - [mysql](https://hub.docker.com/_/mysql/) 5.7.+
 
-### First step
+### First steps
 ```
- git clone -b develop <repo>
+ git clone -b develop https://github.com/mrmnthn/test_shp.git
 ```
 ```
  cd test_shp
