@@ -144,18 +144,23 @@ class Data {
     //     ],
     //     [
     //         'code_departure' => 3,
-    //         'code_arrival' => 5,
+    //         'code_arrival' => 2,
+    //         'price' => 79
+    //     ],
+    //     [
+    //         'code_departure' => 3,
+    //         'code_arrival' => 2,
     //         'price' => 29
     //     ],
     //     [
     //         'code_departure' => 5,
     //         'code_arrival' => 2,
-    //         'price' => 29
+    //         'price' => 50
     //     ],
     //     [
     //         'code_departure' => 2,
     //         'code_arrival' => 4,
-    //         'price' => 29
+    //         'price' => 15
     //     ],
     // ];
 }

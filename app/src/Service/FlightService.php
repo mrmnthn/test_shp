@@ -5,6 +5,7 @@ use App\mockData\Data;
 
 class FlightService
 {
+    const MIN_DEPARTURE_VAL = 1;
 
     public function getBestFlight($from, $to)
     {
@@ -25,31 +26,46 @@ class FlightService
         $stopOverFlight = $this->getPathWithStepOver($to, $departureFlights);
 
         if ($stopOverFlight) {
+            $bestFlightPathWithStopovers = $this->getBestFlightPathWithStopovers($stopOverFlight);
             $res = [
                 'from' => $this->getAirportNameById($from),
                 'to' => $this->getAirportNameById($to),
-                'stopovers' => $this->countStopover($stopOverFlight),
-                'price' => $this->stepOverFlightTotalPrice($stopOverFlight),
+                'stopovers' => $this->countStopover($bestFlightPathWithStopovers),
+                'price' => $this->stepOverFlightTotalPrice($bestFlightPathWithStopovers),
             ];
             return $res;
         }
 
         $res = [
-            'from' => $this->flightService->getAirportNameById($from),
-            'to' => $this->flightService->getAirportNameById($to),
+            'from' => $this->getAirportNameById($from),
+            'to' => $this->getAirportNameById($to),
             'stopovers' => 0,
             'price' => 0,
         ];
 
         return $res;
     }
+
+    /**
+     * From the list of flight with stopovers, return the best price
+     */
+    private function getBestFlightPathWithStopovers($stopOverFlight)
+    {
+        $stopoversOrderByPrice = [];
+        foreach ($stopOverFlight as $key => $stopovers) {
+            $totalPrice = array_sum(array_column($stopovers, 'price'));
+            $stopoversOrderByPrice[$totalPrice] = $stopovers;
+        }
+        return $this->getBestPriceFromGroup($stopoversOrderByPrice);
+
+    }
     
     /**
-     * Count the number of stopovers
+     * Count the number of stopovers, excluding the departure airport
      */
     private function countStopover($stopovers)
     {
-        return count($stopovers);
+        return (count($stopovers) - self::MIN_DEPARTURE_VAL);
         
     }
 
@@ -102,16 +118,16 @@ class FlightService
                     }
                 }
             }
-    
+
             foreach ($stopovers as $key => $path) {
                 foreach ($path['stopovers'] as $stopover) {
                     if ($stopover['code_arrival'] == $to) {
-                        $completePath = array_values($stopovers[$key]['stopovers']);
-                        $completePath[] = $stopovers[$key]['dep'];
-                        return $completePath;
+                        $completePath[$key] = array_values($stopovers[$key]['stopovers']);
+                        $completePath[$key][] = $stopovers[$key]['dep'];
                     }
                 }
             }
+            return $completePath;
         }
 
         return false;
