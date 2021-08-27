@@ -90,10 +90,12 @@ class FlightService
     }
 
     /**
-     * Return the best path with max 2 stopovers
+     * Return the best path with max of 2 stopovers
      */
     private function getPathWithStepOver($to, $departuresGroup)
     {
+        $stopovers = [];
+        $completePath = [];
         foreach ($departuresGroup as $departureFlight) {
             $currentTo = $departureFlight['code_arrival'];
             foreach (Data::FLIGHTS as $stopoverFlight) {
