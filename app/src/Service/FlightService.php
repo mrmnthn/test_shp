@@ -7,6 +7,9 @@ class FlightService
 {
     const MIN_DEPARTURE_VAL = 1;
 
+    /**
+     * Given from and to coordinates return the best price flight if exist
+     */
     public function getBestFlight($from, $to)
     {
         $flightResult = [
@@ -22,13 +25,12 @@ class FlightService
             return $flightResult;
         }
 
-        $departureFlights = $this->departureFlightsById($from);
-        $stopOverFlight = $this->getPathWithStepOver($to, $departureFlights);
+        $stopOverFlight = $this->getPathWithStopOver($from, $to);
 
         if ($stopOverFlight) {
             $bestFlightPathWithStopovers = $this->getBestFlightPathWithStopovers($stopOverFlight);
             $flightResult['stopovers'] = $this->countStopover($bestFlightPathWithStopovers);
-            $flightResult['price'] = $this->stepOverFlightTotalPrice($bestFlightPathWithStopovers);
+            $flightResult['price'] = $this->stopOverFlightTotalPrice($bestFlightPathWithStopovers);
 
             return $flightResult;
         }
@@ -40,7 +42,31 @@ class FlightService
     }
 
     /**
-     * From the list of flight with stopovers, return the best price
+     * Return all Flights
+     */
+    public function getFlights()
+    {
+        return Data::FLIGHTS;
+    }
+
+    /**
+     * Get all airports for multiselect input form
+     */
+    public function getAllAirportsNameAndId() 
+    {
+        $airports = [];
+        foreach (Data::AIRPORTS as $airport) {
+            $airports[] = [
+                'text' => $airport['name'],
+                'value' => $airport['id']
+            ];
+        }
+
+        return $airports;
+    }
+
+    /**
+     * Given the flight's list with stopovers, return the best price
      */
     private function getBestFlightPathWithStopovers($stopOverFlight)
     {
@@ -49,12 +75,13 @@ class FlightService
             $totalPrice = array_sum(array_column($stopovers, 'price'));
             $stopoversOrderByPrice[$totalPrice] = $stopovers;
         }
+
         return $this->getBestPriceFromGroup($stopoversOrderByPrice);
 
     }
     
     /**
-     * Count the number of stopovers, excluding the departure airport
+     * Count the number of stopovers, excluding departure airport
      */
     private function countStopover($stopovers)
     {
@@ -77,7 +104,7 @@ class FlightService
     /**
      * Compute the fligths total price
      */
-    private function stepOverFlightTotalPrice($stepOverFlights)
+    private function stopOverFlightTotalPrice($stepOverFlights)
     {
         return array_sum(array_column($stepOverFlights, 'price'));
     }
@@ -85,11 +112,14 @@ class FlightService
     /**
      * Return the best path with max of 2 stopovers
      */
-    private function getPathWithStepOver($to, $departuresGroup)
-    {
+    private function getPathWithStopOver($from, $to)
+    {   
+        // find all flight where departure code = from
+        $departuresFlights = $this->departureFlightsById($from);
         $stopovers = [];
         $completePath = [];
-        foreach ($departuresGroup as $departureFlight) {
+        //search first stopover
+        foreach ($departuresFlights as $departureFlight) {
             $currentTo = $departureFlight['code_arrival'];
             foreach (Data::FLIGHTS as $stopoverFlight) {
                 if ($departureFlight['code_arrival'] == $stopoverFlight['code_departure']) {
@@ -97,13 +127,13 @@ class FlightService
                 }
             }
         }
-
+        //if first stopover arrival airport is not = to, search for a second stopover
         if (! empty($stopovers)) {
             foreach ($stopovers as $key => $path) {
                 foreach ($path['stopovers'] as $stopover) {
                     if ($stopover['code_arrival'] == $to) {
-                        $completePath = array_values($stopovers[$key]['stopovers']);
-                        $completePath[] = $stopovers[$key]['dep'];
+                        $completePath[$key] = array_values($stopovers[$key]['stopovers']);
+                        $completePath[$key][] = $stopovers[$key]['dep'];
                         return $completePath;
                     }
                     foreach (Data::FLIGHTS as $stopoverFlight) {
@@ -113,7 +143,7 @@ class FlightService
                     }
                 }
             }
-
+            //if second stopover arrival airport is = to, return the list of all possible path
             foreach ($stopovers as $key => $path) {
                 foreach ($path['stopovers'] as $stopover) {
                     if ($stopover['code_arrival'] == $to) {

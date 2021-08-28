@@ -7,16 +7,18 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\FlightService;
-use App\mockData\Data;
 
 class DefaultController extends AbstractController
 {
     private $flightService;
+    private $response;
 
     public function __construct(FlightService $flightService)
     {
         $this->flightService = $flightService;
-        
+        $this->response = new Response();
+        $this->response->headers->set('Content-Type', 'application/json');
+        $this->response->headers->set('Access-Control-Allow-Origin', '*');
     }
 
     /**
@@ -33,39 +35,23 @@ class DefaultController extends AbstractController
      */
     public function getFlights()
     {
-        $response = new Response();
+        $flights = $this->flightService->getFlights();
+        $this->response->setContent(json_encode($flights));
 
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-
-        $response->setContent(json_encode(Data::FLIGHTS));
-
-        return $response;
+        return $this->response;
     }
 
     /**
+     * This method is used to fill the multiselect option form
      * @Route("/api/airports", name="airports")
      * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
-    public function getAirports()
+    public function getAllAirportsNameAndId()
     {
+        $airports = $this->flightService->getAllAirportsNameAndId();
+        $this->response->setContent(json_encode($airports));
 
-        $res = [];
-        foreach (Data::AIRPORTS as $airport) {
-            $res[] = [
-                'text' => $airport['name'],
-                'value' => $airport['id']
-            ];
-        }
-
-        $response = new Response();
-
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-
-        $response->setContent(json_encode($res));
-
-        return $response;
+        return $this->response;
     }
 
     /**
@@ -74,25 +60,21 @@ class DefaultController extends AbstractController
      */
     public function getBestFlights(Request $request)
     {
-        $response = new Response();
-        $response->headers->set('Content-Type', 'application/json');
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-
         $resultFlight = [];
         $params = $request->query->all();
         if (empty($params) || empty($from = $params['fromVal']) || empty($to = $params['toVal'])) {
-            $response->setContent(json_encode($resultFlight));
-            return $response;
+            $this->response->setContent(json_encode($resultFlight));
+            return $this->response;
         }
 
         if ($from === $to){
-            $response->setContent(json_encode($resultFlight));
-            return $response;
+            $this->response->setContent(json_encode($resultFlight));
+            return $this->response;
         }
 
         $resultFlight = $this->flightService->getBestFlight($from, $to);
-        $response->setContent(json_encode($resultFlight));
-        return $response;
+        $this->response->setContent(json_encode($resultFlight));
+        return $this->response;
     }
 
 }
