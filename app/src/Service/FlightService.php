@@ -195,8 +195,7 @@ class FlightService
      */
     private function getBestPriceFromGroup($flightGroup)
     {
-        asort($flightGroup);
-        
+        ksort($flightGroup);
         return current($flightGroup);
     }
 }
