@@ -62,10 +62,13 @@ class DefaultController extends AbstractController
     {
         $resultFlight = [];
         $params = $request->query->all();
-        if (empty($params) || empty($from = $params['fromVal']) || empty($to = $params['toVal'])) {
+        
+        if (empty($params) || empty($params['fromVal']) || empty($params['toVal'])) {
             $this->response->setContent(json_encode($resultFlight));
             return $this->response;
         }
+        $from = $params['fromVal'];
+        $to = $params['toVal'];
 
         if ($from === $to){
             $this->response->setContent(json_encode($resultFlight));
