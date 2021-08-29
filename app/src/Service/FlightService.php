@@ -13,7 +13,7 @@ class FlightService
     public function getBestFlight($from, $to)
     {
         $flightResult = [
-            'from' => $this->getAirportNameById($from), 
+            'from' => $this->getAirportNameById($from),
             'to' => $this->getAirportNameById($to),
         ];
 
@@ -22,6 +22,7 @@ class FlightService
         if ($directFlight) {
             $flightResult['stopovers'] = 0;
             $flightResult['price'] =  $directFlight['price'];
+
             return $flightResult;
         }
 
@@ -52,7 +53,7 @@ class FlightService
     /**
      * Get all airports for multiselect input form
      */
-    public function getAllAirportsNameAndId() 
+    public function getAllAirportsNameAndId()
     {
         $airports = [];
         foreach (Data::AIRPORTS as $airport) {
@@ -77,16 +78,14 @@ class FlightService
         }
 
         return $this->getBestPriceFromGroup($stopoversOrderByPrice);
-
     }
-    
+
     /**
      * Count the number of stopovers, excluding departure airport
      */
     private function countStopover($stopovers)
     {
         return (count($stopovers) - self::MIN_DEPARTURE_VAL);
-        
     }
 
     /**
@@ -113,7 +112,7 @@ class FlightService
      * Return the best path with max of 2 stopovers
      */
     private function getPathWithStopOver($from, $to)
-    {   
+    {
         // find all flight where departure code = from
         $departuresFlights = $this->departureFlightsById($from);
         $stopovers = [];
@@ -127,8 +126,9 @@ class FlightService
                 }
             }
         }
+
         //if first stopover arrival airport is not = to, search for a second stopover
-        if (! empty($stopovers)) {
+        if (!empty($stopovers)) {
             foreach ($stopovers as $key => $path) {
                 foreach ($path['stopovers'] as $stopover) {
                     if ($stopover['code_arrival'] == $to) {
@@ -152,6 +152,7 @@ class FlightService
                     }
                 }
             }
+
             return $completePath;
         }
 
@@ -166,7 +167,7 @@ class FlightService
         $directFlights = [];
         foreach (Data::FLIGHTS as $flight) {
             if ($flight['code_departure'] == $dep && $flight['code_arrival'] == $arr) {
-                $directFlights[] = $flight;
+                $directFlights[$flight['price']] = $flight;
             }
         }
 
@@ -179,13 +180,13 @@ class FlightService
     private function departureFlightsById($id)
     {
         $filteredFlights = [];
-
         foreach (Data::FLIGHTS as $flight) {
             if ($flight['code_departure'] != $id) {
                 continue;
             }
             $filteredFlights[] = $flight;
         }
+        
         return $filteredFlights;
     }
 
@@ -195,6 +196,7 @@ class FlightService
     private function getBestPriceFromGroup($flightGroup)
     {
         asort($flightGroup);
+        
         return current($flightGroup);
     }
 }
